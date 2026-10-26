@@ -53,6 +53,7 @@ fun MainScreen(
 
     LaunchedEffect(key1 = Unit) {
         sharedFlow.collect {
+            println("Collecting $it")
             messages.add(it)
         }
     }
