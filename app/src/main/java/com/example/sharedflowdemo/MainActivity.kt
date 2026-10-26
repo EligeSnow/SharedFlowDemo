@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             SharedFlowDemoTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    // Передаем отступы Scaffold в экран, чтобы содержимое не перекрывало системные панели.
                     ScreenSetup(modifier = Modifier.padding(innerPadding))
                 }
             }
@@ -44,6 +45,7 @@ fun ScreenSetup(
     modifier: Modifier = Modifier,
     viewModel: DemoViewModel = viewModel()
 ) {
+    // ViewModel создается и сохраняется для текущего владельца композиции; экран получает только поток для чтения.
     MainScreen(modifier, viewModel.sharedFlow)
 }
 
@@ -52,18 +54,23 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     sharedFlow: SharedFlow<Int>
 ) {
+    // remember сохраняет список между рекомпозициями, а изменение списка обновляет LazyColumn.
     val messages = remember { mutableStateListOf<Int>() }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(key1 = Unit) {
+        // Сбор действует только в состоянии STARTED: в фоне корутина отменяется,
+        // а при возвращении приложения сбор начинается заново.
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             sharedFlow.collect {
+                // Диагностический вывод позволяет сверить сбор с эмиссией в Logcat.
                 println("Collecting $it")
                 messages.add(it)
             }
         }
     }
 
+    // LazyColumn отображает только видимые элементы списка и обновляется при добавлении значений.
     LazyColumn(modifier = modifier) {
         items(messages) {
             Text(
@@ -79,6 +86,7 @@ fun MainScreen(
 @Composable
 fun GreetingPreview() {
     SharedFlowDemoTheme {
+        // Для Preview используем ViewModel, чтобы передать MainScreen требуемый SharedFlow.
         val viewModel: DemoViewModel = viewModel()
         MainScreen(sharedFlow = viewModel.sharedFlow)
     }
